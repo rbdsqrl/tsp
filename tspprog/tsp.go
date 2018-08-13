@@ -1,17 +1,18 @@
 package tspprog
 
 import (
+	"fmt"
 	"math"
 
-	. "github.com/rbdsqrl/db/schema"
+	"github.com/rbdsqrl/tsp/db"
 )
 
 var perms [][]int
 var dist []float64
 
 //CalculateShortestPath Calculates the shortest path from start through all points and then the end
-func CalculateShortestPath(places []Place, start Place) []Place {
-	var path []Place
+func CalculateShortestPath(places []db.Place, start db.Place) []db.Place {
+	var path []db.Place
 	indices := getIndices(len(places))
 	permuteHelper(indices, 0)
 	dist = getDistances(places, start)
@@ -20,24 +21,29 @@ func CalculateShortestPath(places []Place, start Place) []Place {
 	for i, val := range dist {
 		if val < minDist {
 			minDistIndex = i
+			minDist = val
 		}
 	}
 	minPath := perms[minDistIndex]
-	for i, val := range minPath {
-		path[i] = places[val]
+	fmt.Println(minPath)
+	for _, val := range minPath {
+		path = append(path, places[val])
 	}
 	return path
 }
 
-func getDistances(places []Place, start Place) []float64 {
+func getDistances(places []db.Place, start db.Place) []float64 {
+	var pathDistance float64
 	for _, val := range perms {
 		lastIndex := len(val) - 1
-		pathDistance := distance(start, places[val[0]])
-		for i = 1; i < len(val); i++ {
-			pathDistance += distance(places[i], places[i-1])
+		pathDistance = Distance(start, places[val[0]])
+		for i := 1; i < len(val); i++ {
+			pathDistance += Distance(places[val[i]], places[val[i-1]])
 		}
-		pathDistance += distance(start, places[lastIndex])
+		pathDistance += Distance(start, places[lastIndex])
+		dist = append(dist, pathDistance)
 	}
+	return dist
 }
 
 func getIndices(length int) []int {
@@ -48,33 +54,35 @@ func getIndices(length int) []int {
 	return indices
 }
 
-func distance(place1 Place, place2 Place) float64 {
-	diffX := place1.x - place2.x
-	diffY := place1.y - place2.y
-	return math.Sqrt(diffX*diffX - diffY*diffY)
-}
-
-func swap(indices *[]int, pos1 int, pos2 int) {
+func swap(indices []int, pos1 int, pos2 int) {
 	temp := indices[pos1]
 	indices[pos1] = indices[pos2]
 	indices[pos2] = temp
 }
 
-func permuteHelper(indices []int, int index) {
-	if index >= len(int)-1 {
+func permuteHelper(indices []int, index int) {
+
+	if index >= len(indices)-1 {
 		//add the permutations to the slice
-		perms = append(perms, indices)
+		permutation := make([]int, len(indices))
+		copy(permutation, indices)
+		perms = append(perms, permutation)
+		return
 	}
 
-	for i := index; i < arr.length; i++ {
+	for i := index; i < len(indices); i++ {
 		//Swap the elements at indices index and i
-		swap(&indices, i, index)
+		swap(indices, i, index)
 		//Recurse on the sub array arr[index+1...end]
-		permuteHelper(arr, index+1)
-
+		permuteHelper(indices, index+1)
 		//Swap the elements back
-		t = arr[index]
-		arr[index] = arr[i]
-		arr[i] = t
+		swap(indices, i, index)
 	}
+}
+
+//Distance finds the distance between two places
+func Distance(place1 db.Place, place2 db.Place) float64 {
+	diffX := place1.X - place2.X
+	diffY := place1.Y - place2.Y
+	return math.Sqrt(diffX*diffX + diffY*diffY)
 }
